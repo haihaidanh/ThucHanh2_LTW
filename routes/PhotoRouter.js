@@ -3,6 +3,19 @@ const Photo = require("../db/photoModel");
 const router = express.Router();
 const mongoose = require("mongoose");
 const User = require("../db/userModel");
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "images/");
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + "-" + file.originalname);
+    },
+});
+
+const upload = multer({ storage: storage });
+
 
 router.get("/photosOfUser/:id", async (req, res) => {
     try {
@@ -21,7 +34,7 @@ router.get("/photosOfUser/:id", async (req, res) => {
                     photo.comments.map(async (cmt) => {
                         const commentUser = await User.findById(
                             cmt.user_id,
-                            "_id first_name last_name"
+                            "_id last_name"
                         );
 
                         return {
@@ -48,6 +61,31 @@ router.get("/photosOfUser/:id", async (req, res) => {
         res.status(500).send("Server error");
     }
 });
+
+router.post("/photos/new", upload.single("uploadedphoto"), async (req, res) => {
+    try {
+        const file = req.file;
+        const user_id = req.user._id;
+        if (!file || !user_id) {
+            return res.status(400).send("Missing file or user_id");
+        }
+
+        const newPhoto = new Photo({
+            file_name: file.filename,
+            user_id,
+        });
+        await newPhoto.save();
+        res.status(200).json({
+            errCode: 0,
+            message: "Photo added successfully",
+        });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+    }
+});
+
 
 
 module.exports = router;

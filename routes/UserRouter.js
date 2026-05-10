@@ -3,6 +3,7 @@ const User = require("../db/userModel");
 const router = express.Router();
 const mongoose = require("mongoose");
 
+
 router.get("/user/list", async (req, res) => {
     try {
         const users = await User.find({}, "first_name last_name");
